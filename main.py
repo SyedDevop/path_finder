@@ -1,7 +1,7 @@
-from typing import  List, Tuple
+from typing import List, Tuple
 import pygame  # type: ignore
 from queue import PriorityQueue
-
+import runner
 
 WIDTH = 800
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
@@ -117,7 +117,7 @@ def reconstruct_path(came_from, current, draw):
         draw()
 
 
-def algorithm(draw, grid: Grid, start: Spot, end: Spot):
+def _algorithm(draw, grid: Grid, start: Spot, end: Spot):
     count = 0
     open_set = PriorityQueue()  # type: ignore
     open_set.put((0, count, start))
@@ -141,7 +141,6 @@ def algorithm(draw, grid: Grid, start: Spot, end: Spot):
             reconstruct_path(came_from, end, draw)
             end.make_end()
             start.make_start()
-            print(came_from)
             return True
         for neighbor in current.neighbors:
             temp_g_score = g_score[current] + 1
@@ -162,10 +161,10 @@ def algorithm(draw, grid: Grid, start: Spot, end: Spot):
     return False
 
 
-def make_grid(rows, width) -> Grid:
+def make_grid(rows, cols, width) -> Grid:
     grid: Grid = []
-    gap = width // rows
-    for i in range(rows):
+    gap = width // cols
+    for i in range(cols):
         grid.append([])
         for j in range(rows):
             spot = Spot(i, j, gap, rows)
@@ -173,21 +172,21 @@ def make_grid(rows, width) -> Grid:
     return grid
 
 
-def draw_grid(win, rows, width):
-    gap = width // rows
+def draw_grid(win, rows, cols, width):
+    gap = width // cols
     for i in range(rows):
         pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
-        for j in range(rows):
+        for j in range(cols):
             pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
 
 
-def draw(win, grid: Grid, rows, width):
+def draw(win, grid: Grid, rows, cols, width):
     win.fill(WHITE)
 
     for row in grid:
         for spot in row:
             spot.draw(win)
-    draw_grid(win, rows, width)
+    draw_grid(win, rows, cols, width)
     pygame.display.update()
 
 
@@ -200,35 +199,46 @@ def get_clicked_pos(pos, rows, width) -> Tuple[int, int]:
     return row, col
 
 
+INPUT = """Sabqponm
+abcryxxl
+accszExk
+acctuvwj
+abdefghi"""
+
+
 def main(win, width):
-    ROWS = 50
-    grid = make_grid(ROWS, width)
-    start = None
-    end = None
+    al_maze, al_start, al_end = runner.part_one(INPUT)
+    ROWS = al_maze.__len__()
+    COLS = al_maze[0].__len__()
+    grid = make_grid(ROWS, COLS, width)
+    start = grid[al_start[1]][al_start[0]]
+    end = grid[5][2]
     run = True
     started = False
-
+    print(al_end)
+    start.make_start()
+    end.make_end()
     while run:
-        draw(win, grid, ROWS, width)
+        draw(win, grid, ROWS, COLS, width)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             if started:
                 continue
-            if pygame.mouse.get_pressed()[0]:
-                pos = pygame.mouse.get_pos()
-                row, col = get_clicked_pos(pos, ROWS, width)
-                spot = grid[row][col]
-                if not start and spot != end:
-                    start = spot
-                    start.make_start()
-
-                elif not end and spot != start:
-                    end = spot
-                    end.make_end()
-
-                elif spot not in [end, start]:
-                    spot.make_barrier()
+            # if pygame.mouse.get_pressed()[0]:
+            #     pos = pygame.mouse.get_pos()
+            #     row, col = get_clicked_pos(pos, ROWS, width)
+            #     spot = grid[row][col]
+            #     if not start and spot != end:
+            #         start = spot
+            #         start.make_start()
+            #
+            #     elif not end and spot != start:
+            #         end = spot
+            #         end.make_end()
+            #
+            #     elif spot not in [end, start]:
+            #         spot.make_barrier()
 
             elif pygame.mouse.get_pressed()[2]:
                 pos = pygame.mouse.get_pos()
@@ -245,12 +255,12 @@ def main(win, width):
                         for spot in row:
                             spot.update_neighbors(grid)
 
-                    algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+                    # algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
 
                 if event.key == pygame.K_c:
                     start = None
                     end = None
-                    grid = make_grid(ROWS, width)
+                    grid = make_grid(ROWS, COLS, width)
 
     pygame.quit()
 
