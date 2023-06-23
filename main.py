@@ -2,6 +2,7 @@ from typing import List, Tuple
 import pygame  # type: ignore
 from queue import PriorityQueue
 import runner
+from runner import Spot
 
 WIDTH = 800
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
@@ -18,86 +19,6 @@ PURPLE = (128, 0, 128)
 ORANGE = (255, 165, 0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
-
-
-class Spot:
-    def __init__(self, row, col, width, total_rows) -> None:
-        self.row = row
-        self.col = col
-        self.width = width
-        self.total_rows = total_rows
-        self.x = row * width
-        self.y = col * width
-        self.color = WHITE
-        self.neighbors: List[Spot] = []
-
-    def get_pos(self) -> Tuple[int, int]:
-        return (self.row, self.col)
-
-    def is_closed(self) -> bool:
-        return self.color == RED
-
-    def is_open(self) -> bool:
-        return self.color == GREEN
-
-    def is_barrier(self) -> bool:
-        return self.color == BLACK
-
-    def is_start(self) -> bool:
-        return self.color == ORANGE
-
-    def is_end(self) -> bool:
-        return self.color == TURQUOISE
-
-    def reset(self) -> None:
-        self.color = WHITE
-
-    def make_start(self) -> None:
-        self.color = ORANGE
-
-    def make_closed(self) -> None:
-        self.color = RED
-
-    def make_open(self) -> None:
-        self.color = GREEN
-
-    def make_barrier(self) -> None:
-        self.color = BLACK
-
-    def make_end(self) -> None:
-        self.color = TURQUOISE
-
-    def make_path(self) -> None:
-        self.color = PURPLE
-
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
-
-    def update_neighbors(self, grid):
-        if (
-            self.row < self.total_rows - 1
-            and not grid[self.row + 1][self.col].is_barrier()
-        ):  # DOWN
-            self.neighbors.append(grid[self.row + 1][self.col])
-        # /////////-----___-----////////
-        if self.row > 0 and not grid[self.row - 1][self.col].is_barrier():  # Up
-            self.neighbors.append(grid[self.row - 1][self.col])
-        # /////////-----___-----////////
-        if (
-            self.col < self.total_rows - 1
-            and not grid[self.row][self.col + 1].is_barrier()
-        ):  # RIGHT
-            self.neighbors.append(grid[self.row][self.col + 1])
-        # /////////-----___-----////////
-        if self.col > 0 and not grid[self.row][self.col - 1].is_barrier():  # LEST
-            self.neighbors.append(grid[self.row][self.col - 1])
-        # /////////-----___-----////////
-
-    def __lt__(self, other):
-        return False
-
-    def __str__(self):
-        return "Spot"
 
 
 def h(p1, p2):
@@ -253,9 +174,15 @@ def main(win, width):
                 if event.key == pygame.K_SPACE and start and end:
                     for row in grid:
                         for spot in row:
-                            spot.update_neighbors(grid)
+                            spot.update_neighbors(grid, al_maze)
 
-                    # algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+                    runner.a_start(
+                        lambda: draw(win, grid, ROWS, COLS, width),
+                        grid,
+                        al_maze,
+                        start,
+                        end,
+                    )
 
                 if event.key == pygame.K_c:
                     start = None
