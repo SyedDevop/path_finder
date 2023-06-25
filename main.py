@@ -4,8 +4,17 @@ from queue import PriorityQueue
 import runner
 from runner import Spot
 
-WIDTH = 800
-WIN = pygame.display.set_mode((WIDTH, WIDTH))
+INPUT = """Sabqponm
+abcryxxl
+accszExk
+acctuvwj
+abdefghi"""
+with open("./input.txt", "r") as file:
+    al_maze, al_start, al_end = runner.part_one(file.read())
+
+WIDTH = al_maze[0].__len__() * 10
+HEIGH = al_maze.__len__() * 10
+WIN = pygame.display.set_mode((WIDTH, HEIGH))
 pygame.display.set_caption("A* Path Finder")
 
 
@@ -82,32 +91,34 @@ def _algorithm(draw, grid: Grid, start: Spot, end: Spot):
     return False
 
 
-def make_grid(rows, cols, width) -> Grid:
+def make_grid(rows, cols, maze, width, height) -> Grid:
     grid: Grid = []
     gap = width // cols
-    for i in range(cols):
+    for i in range(rows):
         grid.append([])
-        for j in range(rows):
-            spot = Spot(i, j, gap, rows)
+        for j in range(cols):
+            spot = Spot(i, j, gap, maze[i][j], rows)
             grid[i].append(spot)
     return grid
 
 
-def draw_grid(win, rows, cols, width):
-    gap = width // cols
+def draw_grid(win, rows, cols, width, heigh):
+    gap_c = width // cols
+    gap_r = heigh // rows
+
     for i in range(rows):
-        pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
+        pygame.draw.line(win, GREY, (0, i * gap_r), (width, i * gap_r))
         for j in range(cols):
-            pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
+            pygame.draw.line(win, GREY, (j * gap_c, 0), (j * gap_c, width))
 
 
-def draw(win, grid: Grid, rows, cols, width):
+def draw(win, grid: Grid, rows, cols, width, heigh):
     win.fill(WHITE)
 
     for row in grid:
         for spot in row:
             spot.draw(win)
-    draw_grid(win, rows, cols, width)
+    # draw_grid(win, rows, cols, width, heigh)
     pygame.display.update()
 
 
@@ -120,56 +131,25 @@ def get_clicked_pos(pos, rows, width) -> Tuple[int, int]:
     return row, col
 
 
-INPUT = """Sabqponm
-abcryxxl
-accszExk
-acctuvwj
-abdefghi"""
-
-
-def main(win, width):
-    al_maze, al_start, al_end = runner.part_one(INPUT)
+def main(win, width, heigh):
     ROWS = al_maze.__len__()
     COLS = al_maze[0].__len__()
-    grid = make_grid(ROWS, COLS, width)
+    grid = make_grid(ROWS, COLS, al_maze, width, heigh)
     start = grid[al_start[1]][al_start[0]]
-    end = grid[5][2]
+    end = grid[al_end[1]][al_end[0]]
+
     run = True
     started = False
-    print(al_end)
+
     start.make_start()
     end.make_end()
     while run:
-        draw(win, grid, ROWS, COLS, width)
+        draw(win, grid, ROWS, COLS, width, heigh)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             if started:
                 continue
-            # if pygame.mouse.get_pressed()[0]:
-            #     pos = pygame.mouse.get_pos()
-            #     row, col = get_clicked_pos(pos, ROWS, width)
-            #     spot = grid[row][col]
-            #     if not start and spot != end:
-            #         start = spot
-            #         start.make_start()
-            #
-            #     elif not end and spot != start:
-            #         end = spot
-            #         end.make_end()
-            #
-            #     elif spot not in [end, start]:
-            #         spot.make_barrier()
-
-            elif pygame.mouse.get_pressed()[2]:
-                pos = pygame.mouse.get_pos()
-                row, col = get_clicked_pos(pos, ROWS, width)
-                spot = grid[row][col]
-                spot.reset()
-                if spot == start:
-                    start = None
-                elif spot == end:
-                    end = None
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and start and end:
                     for row in grid:
@@ -177,7 +157,7 @@ def main(win, width):
                             spot.update_neighbors(grid, al_maze)
 
                     runner.a_start(
-                        lambda: draw(win, grid, ROWS, COLS, width),
+                        lambda: draw(win, grid, ROWS, COLS, width, heigh),
                         grid,
                         al_maze,
                         start,
@@ -185,11 +165,11 @@ def main(win, width):
                     )
 
                 if event.key == pygame.K_c:
-                    start = None
-                    end = None
-                    grid = make_grid(ROWS, COLS, width)
+                    start = grid[al_start[1]][al_start[0]]
+                    end = grid[al_end[1]][al_end[0]]
+                    grid = make_grid(ROWS, COLS, al_maze, width, heigh)
 
     pygame.quit()
 
 
-main(WIN, WIDTH)
+main(WIN, WIDTH, HEIGH)

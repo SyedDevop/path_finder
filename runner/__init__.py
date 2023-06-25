@@ -1,3 +1,4 @@
+import math
 from typing import List, Tuple
 import pygame  # type: ignore
 from queue import PriorityQueue
@@ -13,18 +14,21 @@ PURPLE = (128, 0, 128)
 ORANGE = (255, 165, 0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
-
+YELLOW = (255,255,0)
 
 class Spot:
-    def __init__(self, row, col, width, total_rows) -> None:
+    def __init__(self, row, col, width, letter, total_rows) -> None:
+        c = ((ord(letter) - 97) * 255) // 25
+
         self.row = row
         self.col = col
         self.width = width
         self.total_rows = total_rows
-        self.x = row * width
-        self.y = col * width
-        self.color = WHITE
+        self.x = col * width
+        self.y = row * width
+        self.color = (c, c, c)
         self.neighbors: List[Spot] = []
+        self.letter = letter
 
     def get_pos(self) -> Tuple[int, int]:
         return (self.row, self.col)
@@ -63,33 +67,25 @@ class Spot:
         self.color = TURQUOISE
 
     def make_path(self) -> None:
-        self.color = PURPLE
+        self.color = YELLOW
 
     def draw(self, win):
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
 
     def update_neighbors(self, grid, maze):
-        x,y = self.get_pos()
+        y, x = self.get_pos()
+        cur_car = ord(self.letter)
 
-        letter = maze[y][x]
-        cur_car = ord(letter)
-
-        if (
-            self.row < self.total_rows - 1
-            and ord(maze[y + 1][x]) <= cur_car + 1
-        ):  # DOWN
+        if y < maze.__len__() - 1 and ord(maze[y + 1][x]) <= cur_car + 1:  # DOWN
             self.neighbors.append(grid[self.row + 1][self.col])
         # /////////-----___-----////////
-        if self.row > 0 and ord(maze[y - 1][x]) <= cur_car + 1:  # Up
+        if y > 0 and ord(maze[y - 1][x]) <= cur_car + 1:  # Up
             self.neighbors.append(grid[self.row - 1][self.col])
         # /////////-----___-----////////
-        if (
-            self.col < self.total_rows - 1
-            and ord(maze[y][x + 1]) <= cur_car + 1
-        ):  # RIGHT
+        if x < maze[y].__len__() - 1 and ord(maze[y][x + 1]) <= cur_car + 1:  # RIGHT
             self.neighbors.append(grid[self.row][self.col + 1])
         # /////////-----___-----////////
-        if self.col > 0 and  ord(maze[y][x - 1]) <= cur_car + 1:  # LEST
+        if x > 0 and ord(maze[y][x - 1]) <= cur_car + 1:  # LEST
             self.neighbors.append(grid[self.row][self.col - 1])
         # /////////-----___-----////////
 
@@ -97,7 +93,10 @@ class Spot:
         return False
 
     def __str__(self):
-        return "Spot"
+        return f"Spot: {self.letter} : r = {self.row} c ={self.col} "
+
+    def __repr__(self):
+        return f"Spot: {self.letter} : r = {self.row} c ={self.col} "
 
 
 def get_start_pos(maze: Maze) -> Tuple[int, int] | None:
@@ -173,15 +172,14 @@ def a_start(draw, grid: Grid, maze: Maze, start: Spot, end: Spot):
     f_score[start] = h(start.get_pos(), end.get_pos())
     open_set_hash = {start}
     while not open_set.empty():
-        current = open_set.get()[1]
+        current: Spot = open_set.get()[1]
         open_set_hash.remove(current)
 
         if current == end:
             reconstruct_path(came_from, end, draw)
             end.make_end()
-            return 0
 
-        for neighbour in current.get_neighbors():
+        for neighbour in current.neighbors:
             temp_g_score = g_score[current] + 1
 
             if temp_g_score < g_score[neighbour]:
